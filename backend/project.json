@@ -1,0 +1,67 @@
+{
+  "id": "gb-0048",
+  "direction": "定时交付",
+  "title": "临汀服务时窗交付簿",
+  "slug": "service-calendar",
+  "algorithm": "工作日/假日/午休交集分钟与SLA超时分层透视",
+  "entities": "ServiceCase / BusinessCalendar / SlaPolicy / SlaRun / DeliverySchedule",
+  "scenario": "数据服务请求时间→业务时钟核算→站内定时交付；含时区与跨日，非工单客服功能",
+  "visual": "时刻表票据、胭脂与灰绿",
+  "oracle": "周五到周一含假日和午休手算；负时段拒绝；边界分钟",
+  "frontend": 18252,
+  "backend": 19252,
+  "db_port": 17752,
+  "database": "PostgreSQL16",
+  "batch": 2,
+  "label": "服务时窗样本",
+  "policy_label": "业务日历与SLA",
+  "fields": {
+    "period": "结算月份",
+    "department": "分析小组",
+    "opened": "开始（ISO+时区）",
+    "closed": "结束（ISO+时区）",
+    "priority": "优先级"
+  },
+  "example": {
+    "period": "2026-11",
+    "department": "数据建模组",
+    "opened": "2026-11-13T16:30:00+08:00",
+    "closed": "2026-11-17T10:00:00+08:00",
+    "priority": "普通"
+  },
+  "policy": {
+    "version": "工作时钟-v1",
+    "timezone": "Asia/Shanghai",
+    "weekdays": [
+      0,
+      1,
+      2,
+      3,
+      4
+    ],
+    "windows": [
+      [
+        540,
+        720
+      ],
+      [
+        780,
+        1080
+      ]
+    ],
+    "holidays": [
+      "2026-11-16"
+    ],
+    "sla_minutes": {
+      "普通": 480,
+      "紧急": 120
+    }
+  },
+  "colors": [
+    "0.95 0.02 77",
+    "0.3 0.065 20",
+    "0.54 0.08 155"
+  ],
+  "caption": "业务时钟 · 午休与假日显式扣除",
+  "unit": "分钟"
+}

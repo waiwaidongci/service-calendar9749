@@ -1,0 +1,71 @@
+name: ${COMPOSE_PROJECT_NAME:-service-calendar}
+services:
+  db:
+    container_name: ${COMPOSE_PROJECT_NAME:-service-calendar}-db
+    image: postgres:16-alpine
+    environment: {POSTGRES_USER: app, POSTGRES_PASSWORD: appdev, POSTGRES_DB: business}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U app -d business"]
+      interval: 3s
+      timeout: 3s
+      retries: 45
+    ports: ["${DB_PORT:-17752}:5432"]
+    volumes: ["db-data:/var/lib/postgresql/data"]
+  redis:
+    image: redis:7-alpine
+    container_name: ${COMPOSE_PROJECT_NAME:-service-calendar}-redis
+    command: redis-server --appendonly yes
+    volumes: ["redis-data:/data"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+  backend:
+    build: ./backend
+    container_name: ${COMPOSE_PROJECT_NAME:-service-calendar}-backend
+    environment: &backend-env
+      DATABASE_URL: postgresql+psycopg://app:appdev@db:5432/business
+      REDIS_URL: redis://redis:6379/0
+      JWT_SECRET: ${JWT_SECRET:-service-calendar-local-demo-change-before-production-2026}
+      SEED_DEMO: "true"
+    ports: ["${BACKEND_PORT:-19252}:8000"]
+    volumes: ["report-files:/app/artifacts"]
+    depends_on:
+      db: {condition: service_healthy}
+      redis: {condition: service_healthy}
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 3s
+      timeout: 3s
+      retries: 45
+  worker:
+    build: ./backend
+    container_name: ${COMPOSE_PROJECT_NAME:-service-calendar}-worker
+    command: python -m src.worker
+    environment: *backend-env
+    volumes: ["report-files:/app/artifacts"]
+    depends_on:
+      backend: {condition: service_healthy}
+      db: {condition: service_healthy}
+      redis: {condition: service_healthy}
+    healthcheck:
+      test: ["CMD", "python", "-c", "import time; from pathlib import Path; assert time.time()-float(Path('/tmp/worker-heartbeat').read_text())<15"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+  frontend:
+    build: ./frontend
+    container_name: ${COMPOSE_PROJECT_NAME:-service-calendar}-frontend
+    ports: ["${FRONTEND_PORT:-18252}:80"]
+    depends_on:
+      backend: {condition: service_healthy}
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1/"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+volumes:
+  db-data:
+  redis-data:
+  report-files:
