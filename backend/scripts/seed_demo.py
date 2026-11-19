@@ -1,8 +1,9 @@
 import json,random
 from src.config.database import Base,engine,Session
-from src.config.settings import CONFIG
+from src.config.settings import CONFIG,DP_BUDGET
 from src.models.identity import User
 from src.models.source import Source,Policy,Period
+from src.models.privacy import PrivacyAccount
 from src.models import run
 from src.utils.security import password_hash
 from src.services.validation import validate_source
@@ -24,6 +25,7 @@ def seed():
   for i,data in enumerate(rows):
    validate_source(data);key='demo-'+str(i+1)
    if not db.query(Source).filter_by(natural_key=key).first():db.add(Source(natural_key=key,data=data))
+   if not db.query(PrivacyAccount).filter_by(draft_key=key).first():db.add(PrivacyAccount(draft_key=key,budget=DP_BUDGET,spent=0.0))
   if not db.query(Policy).filter_by(version=CONFIG['policy']['version']).first():db.add(Policy(version=CONFIG['policy']['version'],data=CONFIG['policy']))
   db.commit();print(json.dumps({'users':db.query(User).count(),'sources':db.query(Source).count(),'policies':db.query(Policy).count(),'periods':db.query(Period).count()},ensure_ascii=False))
 if __name__=='__main__':seed()

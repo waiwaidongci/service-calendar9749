@@ -28,6 +28,8 @@ services:
       DATABASE_URL: postgresql+psycopg://app:appdev@db:5432/business
       REDIS_URL: redis://redis:6379/0
       JWT_SECRET: ${JWT_SECRET:-service-calendar-local-demo-change-before-production-2026}
+      DP_EPSILON: ${DP_EPSILON:-0.1}
+      DP_BUDGET: ${DP_BUDGET:-1.0}
       SEED_DEMO: "true"
     ports: ["${BACKEND_PORT:-19252}:8000"]
     volumes: ["report-files:/app/artifacts"]

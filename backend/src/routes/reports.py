@@ -3,8 +3,9 @@ from fastapi.responses import Response
 from src.config.database import database
 from src.controllers.auth import current,editor,admin
 from src.models.run import Run
-from src.schemas.requests import RunInput,ReviewInput
+from src.schemas.requests import RunInput,ReviewInput,PublishInput
 from src.services.report import submit,approve
+from src.services.privacy import publish
 from src.services.export import csv_text
 from src.utils.serialize import row
 router=APIRouter()
@@ -19,6 +20,8 @@ def detail(id:int,db=Depends(database),u=Depends(current)):
  return row(obj)
 @router.post('/runs/{id}/approve')
 def review(id:int,b:ReviewInput,db=Depends(database),u=Depends(admin)): return row(approve(db,u,id,b.note))
+@router.post('/runs/{id}/publish')
+def release(id:int,b:PublishInput,db=Depends(database),u=Depends(editor)): return row(publish(db,u,id,b.idempotency_key))
 @router.get('/runs/{id}/csv')
 def download(id:int,db=Depends(database),u=Depends(current)):
  obj=db.get(Run,id)

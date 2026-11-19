@@ -1,13 +1,16 @@
 from fastapi import HTTPException
 from src.models.source import Source,Policy,Period
+from src.models.privacy import PrivacyAccount
 from src.services.validation import validate_source,validate_policy
 from src.services.audit import log
+from src.config.settings import DP_BUDGET
 import uuid
 def save_source(db,user,data,id=None):
  validate_source(data)
  obj=db.get(Source,id) if id else Source(natural_key='user-'+uuid.uuid4().hex)
  if not obj: raise HTTPException(404,'底稿不存在')
  obj.data=data;db.add(obj)
+ if not db.query(PrivacyAccount).filter_by(draft_key=obj.natural_key).first():db.add(PrivacyAccount(draft_key=obj.natural_key,budget=DP_BUDGET,spent=0.0))
  if not db.query(Period).filter_by(name=data['period']).first():db.add(Period(name=data['period'],description='业务来源自动登记期间'))
  log(db,user.email,'source.update' if id else 'source.create',obj.natural_key);db.commit();return obj
 def save_policy(db,user,data):
